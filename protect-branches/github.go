@@ -12,10 +12,6 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-var (
-	githubTokenEnv = "GITHUB_AUTH_TOKEN"
-)
-
 type githubSecrets struct {
 	Token         string `yaml:"token"`
 	WebhookSecret string `yaml:"webhookSecret"`
