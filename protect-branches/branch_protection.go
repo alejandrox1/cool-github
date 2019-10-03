@@ -38,7 +38,7 @@ func (g *GithubRepoPolicy) Printf(format string, a ...interface{}) {
 	g.Logger.Printf(format, a...)
 }
 
-func (g *GithubRepoPolicy) createBranchProtection(owner, repo, branch string) {
+func (g *GithubRepoPolicy) createBranchProtection(owner, repo, branch string) error {
 	protectionRequest := &github.ProtectionRequest{
 		RequiredStatusChecks: &github.RequiredStatusChecks{
 			Strict:   true,
@@ -55,13 +55,13 @@ func (g *GithubRepoPolicy) createBranchProtection(owner, repo, branch string) {
 	protection, resp, err := g.Client.Repositories.UpdateBranchProtection(g.Context, owner, repo, "master", protectionRequest)
 	if (resp.StatusCode < 200 || resp.StatusCode > 299) || err != nil {
 		g.Printf("updateBranch protection returned status code: %v and err: %v\n", resp.StatusCode, err)
-		return
+		return err
 	}
 
 	signatureProtection, resp, err := g.Client.Repositories.RequireSignaturesOnProtectedBranch(g.Context, owner, repo, "master")
 	if (resp.StatusCode < 200 || resp.StatusCode > 299) || err != nil {
 		g.Printf("require signature returned status code: %v and err: %v\n", resp.StatusCode)
-		return
+		return err
 	}
 
 	var protectionSummary string
@@ -70,7 +70,7 @@ func (g *GithubRepoPolicy) createBranchProtection(owner, repo, branch string) {
 		jsonProtection, err := json.MarshalIndent(branchProtectionRule, "", "\t")
 		if err != nil {
 			g.Printf("error marshaling protection: %v\n", err)
-			return
+			return err
 		}
 		protectionSummary = fmt.Sprintf("Protection added:\n```json\n%s\n```\n", string(jsonProtection))
 	}
@@ -84,7 +84,9 @@ func (g *GithubRepoPolicy) createBranchProtection(owner, repo, branch string) {
 	issue, resp, err := g.Client.Issues.Create(g.Context, owner, repo, issueRequest)
 	if (resp.StatusCode < 200 || resp.StatusCode > 299) || err != nil {
 		g.Printf("creating issue returned status code: %v and err: %v\n", resp.StatusCode, err)
-		return
+		return err
 	}
+
 	g.Printf("created notification issue: %s\n", *issue.HTMLURL)
+	return nil
 }
