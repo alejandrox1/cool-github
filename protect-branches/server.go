@@ -17,8 +17,7 @@ var (
 
 func newWebServer(addr string, logger *log.Logger) *http.Server {
 	router := http.NewServeMux()
-	grPolicy := NewGithubRepoPolicy(logger)
-	router.Handle("/webhook", grPolicy)
+	router.HandleFunc("/webhook", handleGithubWebhook)
 
 	return &http.Server{
 		Addr:         addr,
