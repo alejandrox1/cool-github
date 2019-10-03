@@ -9,6 +9,7 @@ a SIGKILL will be sent.
 package main
 
 import (
+	"flag"
 	"log"
 	"net/http"
 	"os"
@@ -20,7 +21,40 @@ const (
 	listenAddr = "0.0.0.0:8080"
 )
 
+var (
+	githubSecretsConfig string
+	branchPolicyConfig  string
+
+	// Github secrets.
+	githubAccessToken   string
+	githubWebhookSecret string
+)
+
+func parseFlags() {
+	flag.StringVar(&githubSecretsConfig, "githubSecrets", "", "configuration file with access token and webhook secret")
+	flag.StringVar(&branchPolicyConfig, "branchPolicy", "branch_policy.yaml", "coniguration file for branch protection policy")
+	flag.Parse()
+}
+
+func parseConfigs() error {
+	githubToken, webhookSecret, err := readGithubSecrets(githubSecretsConfig)
+	if err != nil {
+		return err
+	}
+
+	// Set the global variables.
+	githubAccessToken = githubToken
+	githubWebhookSecret = webhookSecret
+
+	return nil
+}
+
 func main() {
+	parseFlags()
+	if err := parseConfigs(); err != nil {
+		panic(err)
+	}
+
 	quit := make(chan os.Signal, 1)
 	done := make(chan interface{}, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)

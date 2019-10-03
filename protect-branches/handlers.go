@@ -13,7 +13,7 @@ import (
 func handleGithubWebhook(w http.ResponseWriter, r *http.Request) {
 	logger := log.New(os.Stdout, "githubWebhook: ", log.LstdFlags)
 
-	payload, err := github.ValidatePayload(r, webhookSecret)
+	payload, err := github.ValidatePayload(r, []byte(githubWebhookSecret))
 	if err != nil {
 		logger.Printf("error validating request body: %v\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

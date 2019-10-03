@@ -5,39 +5,44 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
-	"syscall"
+	"io/ioutil"
 
 	"github.com/google/go-github/v28/github"
-	"golang.org/x/crypto/ssh/terminal"
 	"golang.org/x/oauth2"
+	"gopkg.in/yaml.v2"
 )
 
 var (
 	githubTokenEnv = "GITHUB_AUTH_TOKEN"
 )
 
-func getGithubToken() string {
-	var githubToken string
+type githubSecrets struct {
+	Token         string `yaml:"token"`
+	WebhookSecret string `yaml:"webhookSecret"`
+}
 
-	githubToken = os.Getenv(githubTokenEnv)
-	if githubToken == "" {
-		fmt.Printf("GitHub access token: ")
-		token, err := terminal.ReadPassword(syscall.Stdin)
-		if err != nil {
-			panic(err)
-		}
-		githubToken = string(token)
+func readGithubSecrets(config string) (string, string, error) {
+	yamlFile, err := ioutil.ReadFile(config)
+	if err != nil {
+		return "", "", err
 	}
 
-	return githubToken
+	gs := &githubSecrets{}
+	if err := yaml.Unmarshal(yamlFile, gs); err != nil {
+		return "", "", err
+	}
+
+	if gs != nil && gs.Token != "" && gs.WebhookSecret != "" {
+		return gs.Token, gs.WebhookSecret, nil
+	} else {
+		return "", "", fmt.Errorf("one or more values were missing from %s", config)
+	}
 }
 
 func newGithubClient() (*github.Client, context.Context) {
-	githubToken := getGithubToken()
 	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: githubToken},
+		&oauth2.Token{AccessToken: githubAccessToken},
 	)
 	tc := oauth2.NewClient(ctx, ts)
 	return github.NewClient(tc), ctx
