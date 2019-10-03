@@ -1,0 +1,9 @@
+notifyUsers: ["alejandrox1"]
+enforceAdmins: true
+requireSignatures: true
+requiredPullRequestReviews:
+  dismissStaleReviews: true
+  requiredApprovingReviewCount: 2
+requireStatusChecks:
+  strict: true
+  contexts: []

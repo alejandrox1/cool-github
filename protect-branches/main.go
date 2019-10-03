@@ -28,6 +28,9 @@ var (
 	// Github secrets.
 	githubAccessToken   string
 	githubWebhookSecret string
+
+	// Github branch rules.
+	actingBranchPolicy *BranchPolicy
 )
 
 func parseFlags() {
@@ -46,6 +49,12 @@ func parseConfigs() error {
 	githubAccessToken = githubToken
 	githubWebhookSecret = webhookSecret
 
+	bp, err := readBranchProtectionConfig(branchPolicyConfig)
+	if err != nil {
+		log.Printf("error reading branch policy config: %+v\n", err)
+	}
+	actingBranchPolicy = bp
+	log.Println(actingBranchPolicy)
 	return nil
 }
 
