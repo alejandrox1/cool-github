@@ -1,3 +1,7 @@
+/*
+   Define and read the configuration file containg the desired branch
+   protection policy.
+*/
 package main
 
 import (
@@ -6,6 +10,15 @@ import (
 
 	"gopkg.in/yaml.v2"
 )
+
+// BranchPolicy represents the config file detailing the desired policy.
+type BranchPolicy struct {
+	*RequireStatusChecks        `yaml:"requireStatusChecks"`
+	*RequiredPullRequestReviews `yaml:"requiredPullRequestReviews"`
+	RequireSignatures           bool     `yaml:"requireSignatures"`
+	EnforceAdmins               bool     `yaml:"enforceAdmins"`
+	NotifyUsers                 []string `yaml:"notifyUsers,omitempty"`
+}
 
 type RequireStatusChecks struct {
 	Strict   bool     `yaml:"strict"`
@@ -17,14 +30,6 @@ type RequiredPullRequestReviews struct {
 	RequiredApprovingReviewCount int  `yaml:"requiredApprovingReviewCount"`
 }
 
-type BranchPolicy struct {
-	*RequireStatusChecks        `yaml:"requireStatusChecks"`
-	*RequiredPullRequestReviews `yaml:"requiredPullRequestReviews"`
-	RequireSignatures           bool     `yaml:"requireSignatures"`
-	EnforceAdmins               bool     `yaml:"enforceAdmins"`
-	NotifyUsers                 []string `yaml:"notifyUsers,omitempty"`
-}
-
 func (b *BranchPolicy) String() string {
 	return fmt.Sprintf(
 		"BranchPolicy{RequireStatusChecks:%+v, RequiredPullRequestReviews:%+v, RequireSignatures:%v, EnforceAdmins:%v, NotifyUsers:%v}",
@@ -32,6 +37,7 @@ func (b *BranchPolicy) String() string {
 	)
 }
 
+// UnmarshalYAML allows unmarshalling and application of default values.
 func (b *BranchPolicy) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	type branchPolicyType BranchPolicy
 	defaultBranchPolicy := branchPolicyType{
@@ -55,6 +61,8 @@ func (b *BranchPolicy) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return nil
 }
 
+// readBranchProtectionConfig returns a BranchPolicy object with the
+// information from the configuration file.
 func readBranchProtectionConfig(config string) (*BranchPolicy, error) {
 	yamlFile, err := ioutil.ReadFile(config)
 	if err != nil {

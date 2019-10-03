@@ -1,10 +1,8 @@
 /*
-- Allow server to finish any open request. Handle work in progress with a max timeout.
-- Do not keep any connections that finish alive.
+   Entrypoint for application.
 
-    Container orchestration systems will ususally send a SIGTERM and allow the container
-to performa a graceful shutdown. After this period, if the process is still running then
-a SIGKILL will be sent.
+   Here we also contain the global variables for accessing the GitHub access
+   token and the webhook secret.
 */
 package main
 

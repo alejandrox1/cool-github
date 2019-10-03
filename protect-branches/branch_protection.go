@@ -1,5 +1,8 @@
 /*
- */
+   Implement the logic for creating a branch protection policy. We use the
+   term policy as the logic here enables the user to create a protection rule
+   with more specifications (i.e., require signed commits.
+*/
 package main
 
 import (
@@ -12,11 +15,13 @@ import (
 	"github.com/google/go-github/v28/github"
 )
 
-type BranchProtectionRule struct {
+// BranchProtectionPolicy
+type BranchProtectionPolicy struct {
 	*github.Protection
 	*github.SignaturesProtectedBranch `json:"required_signatures"`
 }
 
+// GithubRepoPolicy serves as the agent for performing API calls.
 type GithubRepoPolicy struct {
 	Client  *github.Client
 	Context context.Context
@@ -38,7 +43,11 @@ func (g *GithubRepoPolicy) Printf(format string, a ...interface{}) {
 	g.Logger.Printf(format, a...)
 }
 
+// createBranchProtection creates a branch protection policy for the specified
+// branch on the given repo.
 func (g *GithubRepoPolicy) createBranchProtection(owner, repo, branch string) error {
+	// Create a branch protection request. Populate it with the default values
+	// from actingBranchPolicy.
 	protectionRequest := &github.ProtectionRequest{
 		RequiredStatusChecks: &github.RequiredStatusChecks{
 			Strict:   actingBranchPolicy.RequireStatusChecks.Strict,
@@ -57,6 +66,7 @@ func (g *GithubRepoPolicy) createBranchProtection(owner, repo, branch string) er
 		return err
 	}
 
+	// If requiering signed commits, then make a request to do so.
 	signatureProtection := &github.SignaturesProtectedBranch{}
 	if actingBranchPolicy.RequireSignatures {
 		signatureProtection, resp, err = g.Client.Repositories.RequireSignaturesOnProtectedBranch(g.Context, owner, repo, "master")
@@ -66,9 +76,11 @@ func (g *GithubRepoPolicy) createBranchProtection(owner, repo, branch string) er
 		}
 	}
 
+	// Create a string summary of the branch protection policy. This will be
+	// included in the body of an issue.
 	var protectionSummary string
 	if protection != nil {
-		branchProtectionRule := BranchProtectionRule{protection, signatureProtection}
+		branchProtectionRule := BranchProtectionPolicy{protection, signatureProtection}
 		jsonProtection, err := json.MarshalIndent(branchProtectionRule, "", "\t")
 		if err != nil {
 			g.Printf("error marshaling protection: %v\n", err)
@@ -78,10 +90,12 @@ func (g *GithubRepoPolicy) createBranchProtection(owner, repo, branch string) er
 	}
 	g.Printf(protectionSummary)
 
+	// Create an issue with a summary of the created branch protection policy
+	// and assign the issue to the desired set of users/
 	issueRequest := &github.IssueRequest{
 		Title:     github.String("Branch protection rules added to master branch"),
 		Body:      github.String(protectionSummary),
-		Assignees: &[]string{"alejandrox1"},
+		Assignees: &actingBranchPolicy.NotifyUsers,
 	}
 	issue, resp, err := g.Client.Issues.Create(g.Context, owner, repo, issueRequest)
 	if (resp.StatusCode < 200 || resp.StatusCode > 299) || err != nil {
