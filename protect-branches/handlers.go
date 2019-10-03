@@ -1,5 +1,6 @@
 /*
- */
+   Define handler functions for the web server.
+*/
 package main
 
 import (
@@ -32,8 +33,10 @@ func handleGithubWebhook(w http.ResponseWriter, r *http.Request) {
 	case *github.RepositoryEvent:
 		if event.Action != nil && *event.Action == "created" {
 			logger.Printf("adding branch default branch protection policy for %s/%s\n", *event.Repo.Owner.Login, *event.Repo.Name)
+
+			// Create a GitHub policy agent.
 			githubBranchPolicy := NewGithubRepoPolicy()
-			err := retry(3, func() error {
+			err := retry(5, func() error {
 				err := githubBranchPolicy.createBranchProtection(*event.Repo.Owner.Login, *event.Repo.Name, "master")
 				return err
 			})

@@ -1,5 +1,7 @@
 /*
- */
+   Define and create the web server and register any routes.
+   Here we also specify how to shut down the server.
+*/
 package main
 
 import (

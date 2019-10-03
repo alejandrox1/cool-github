@@ -1,3 +1,6 @@
+/*
+   Utility function to retry.
+*/
 package main
 
 import (
