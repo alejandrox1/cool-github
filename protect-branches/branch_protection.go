@@ -5,6 +5,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 
@@ -63,6 +64,7 @@ func (g *GithubRepoPolicy) createBranchProtection(owner, repo, branch string) {
 		return
 	}
 
+	var protectionSummary string
 	if protection != nil {
 		branchProtectionRule := BranchProtectionRule{protection, signatureProtection}
 		jsonProtection, err := json.MarshalIndent(branchProtectionRule, "", "\t")
@@ -70,6 +72,19 @@ func (g *GithubRepoPolicy) createBranchProtection(owner, repo, branch string) {
 			g.Printf("error marshaling protection: %v\n", err)
 			return
 		}
-		g.Printf("Protection added: %s\n", string(jsonProtection))
+		protectionSummary = fmt.Sprintf("Protection added:\n```json\n%s\n```\n", string(jsonProtection))
 	}
+	g.Printf(protectionSummary)
+
+	issueRequest := &github.IssueRequest{
+		Title:     github.String("Branch protection rules added to master branch"),
+		Body:      github.String(protectionSummary),
+		Assignees: &[]string{"alejandrox1"},
+	}
+	issue, resp, err := g.Client.Issues.Create(g.Context, owner, repo, issueRequest)
+	if (resp.StatusCode < 200 || resp.StatusCode > 299) || err != nil {
+		g.Printf("creating issue returned status code: %v and err: %v\n", resp.StatusCode, err)
+		return
+	}
+	g.Printf("created notification issue: %s\n", *issue.HTMLURL)
 }
