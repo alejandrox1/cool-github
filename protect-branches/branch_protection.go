@@ -41,27 +41,29 @@ func (g *GithubRepoPolicy) Printf(format string, a ...interface{}) {
 func (g *GithubRepoPolicy) createBranchProtection(owner, repo, branch string) error {
 	protectionRequest := &github.ProtectionRequest{
 		RequiredStatusChecks: &github.RequiredStatusChecks{
-			Strict:   true,
-			Contexts: []string{},
+			Strict:   actingBranchPolicy.RequireStatusChecks.Strict,
+			Contexts: actingBranchPolicy.RequireStatusChecks.Contexts,
 		},
 		RequiredPullRequestReviews: &github.PullRequestReviewsEnforcementRequest{
-			DismissStaleReviews:          true,
-			RequiredApprovingReviewCount: 2,
+			DismissStaleReviews:          actingBranchPolicy.RequiredPullRequestReviews.DismissStaleReviews,
+			RequiredApprovingReviewCount: actingBranchPolicy.RequiredPullRequestReviews.RequiredApprovingReviewCount,
 		},
-		EnforceAdmins: true,
+		EnforceAdmins: actingBranchPolicy.EnforceAdmins,
 		Restrictions:  nil,
 	}
-
 	protection, resp, err := g.Client.Repositories.UpdateBranchProtection(g.Context, owner, repo, "master", protectionRequest)
 	if (resp.StatusCode < 200 || resp.StatusCode > 299) || err != nil {
 		g.Printf("updateBranch protection returned status code: %v and err: %v\n", resp.StatusCode, err)
 		return err
 	}
 
-	signatureProtection, resp, err := g.Client.Repositories.RequireSignaturesOnProtectedBranch(g.Context, owner, repo, "master")
-	if (resp.StatusCode < 200 || resp.StatusCode > 299) || err != nil {
-		g.Printf("require signature returned status code: %v and err: %v\n", resp.StatusCode)
-		return err
+	signatureProtection := &github.SignaturesProtectedBranch{}
+	if actingBranchPolicy.RequireSignatures {
+		signatureProtection, resp, err = g.Client.Repositories.RequireSignaturesOnProtectedBranch(g.Context, owner, repo, "master")
+		if (resp.StatusCode < 200 || resp.StatusCode > 299) || err != nil {
+			g.Printf("require signature returned status code: %v and err: %v\n", resp.StatusCode)
+			return err
+		}
 	}
 
 	var protectionSummary string
