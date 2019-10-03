@@ -11,7 +11,6 @@ import (
 )
 
 var (
-	webhookSecret     = []byte("my-secret-key")
 	serverGracePeriod = 30 * time.Second
 )
 
